@@ -93,7 +93,6 @@
             color: #e74c3c;
             margin-top: 10px;
             font-weight: bold;
-            min-height: 1.2em;
         }
 
         .chat-container {
@@ -112,6 +111,29 @@
 
         .chat-header h2 {
             font-size: 24px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
 
         .logout-btn {
@@ -146,6 +168,18 @@
             border-radius: 18px;
             position: relative;
             word-wrap: break-word;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message.own {
@@ -208,10 +242,75 @@
         .send-btn:hover {
             background: #2980b9;
         }
+
+        .send-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .setup-instructions {
+            background: #f8f9fa;
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .setup-instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .login-form {
+                padding: 30px 20px;
+            }
+            
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Setup Instructions -->
+        <div class="setup-instructions">
+            <h3>🔥 Firebase Connected!</h3>
+            <p><strong>Status:</strong> Ready for cross-device messaging</p>
+            <p>Both users can now chat in real-time across different devices!</p>
+        </div>
+
         <!-- Login Form -->
         <div class="login-form" id="loginForm">
             <h1>Private Chat</h1>
@@ -223,203 +322,272 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" placeholder="Enter your password">
             </div>
-            <button class="login-btn" id="loginBtn">Login</button>
+            <button class="login-btn" onclick="login()">Login</button>
             <div class="error" id="loginError"></div>
         </div>
 
         <!-- Chat Container -->
         <div class="chat-container" id="chatContainer">
             <div class="chat-header">
+                <div class="status-indicator" id="statusIndicator"></div>
                 <h2 id="chatTitle">Private Chat</h2>
-                <button class="logout-btn" id="logoutBtn">Logout</button>
+                <button class="logout-btn" onclick="logout()">Logout</button>
             </div>
             <div class="messages" id="messages"></div>
             <div class="input-area">
-                <input type="text" class="message-input" id="messageInput" placeholder="Type your message...">
-                <button class="send-btn" id="sendBtn">Send</button>
+                <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK and App Logic -->
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+
+    <!-- Firebase SDK v9 (modular) -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // IMPORTANT: The platform provides these variables automatically.
-            // Do NOT add your own firebaseConfig object.
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'private-chat-app';
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC39AyuOY9zmaafShioTAxLJ1UeIi8b8YE",
+            authDomain: "done-a9c02.firebaseapp.com",
+            projectId: "done-a9c02",
+            storageBucket: "done-a9c02.firebasestorage.app",
+            messagingSenderId: "913187617467",
+            appId: "1:913187617467:web:81cf7623e067669f30879e",
+            measurementId: "G-Y6N5SDGSSL"
+        };
 
-            // Check if the firebaseConfig is empty, which means it failed to load.
-            if (!firebaseConfig.apiKey) {
-                document.getElementById('loginError').textContent = "Connection to chat server failed. Please ensure Firebase is set up correctly.";
+        // Initialize Firebase
+        let app, db;
+        let isFirebaseConnected = false;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            isFirebaseConnected = true;
+            console.log('✅ Firebase connected successfully');
+            showNotification('Firebase connected!', 'success');
+        } catch (error) {
+            console.error('❌ Firebase connection failed:', error);
+            showNotification('Firebase connection failed: ' + error.message, 'error');
+            isFirebaseConnected = false;
+        }
+
+        // User credentials
+        const users = {
+            'Shalin': 'Shalin@2516',
+            'Parthi': 'Parthi@1207'
+        };
+
+        let currentUser = '';
+        let messages = [];
+        let isLoggedIn = false;
+        let messageListener = null;
+
+        // Make functions globally available
+        window.login = login;
+        window.logout = logout;
+        window.sendMessage = sendMessage;
+        window.handleKeyPress = handleKeyPress;
+
+        function updateConnectionStatus() {
+            const indicator = document.getElementById('statusIndicator');
+            if (isFirebaseConnected) {
+                indicator.classList.remove('offline');
+                indicator.title = 'Connected - Messages sync across devices';
+            } else {
+                indicator.classList.add('offline');
+                indicator.title = 'Offline - Demo mode only';
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Please enter both username and password';
                 return;
             }
 
-            let db, auth;
-            let currentUser = null;
-            let messageListener = null;
-            let isInitialLoad = true;
+            if (users[username] && users[username] === password) {
+                currentUser = username;
+                isLoggedIn = true;
+                showChat();
+                showNotification(`Welcome ${username}!`, 'success');
+                errorDiv.textContent = '';
+                
+                if (isFirebaseConnected) {
+                    setupRealtimeListener();
+                } else {
+                    showNotification('Firebase not connected - messages won\'t sync', 'error');
+                }
+            } else {
+                errorDiv.textContent = 'Invalid username or password';
+                showNotification('Login failed!', 'error');
+            }
+        }
 
-            const users = {
-                'Shalin': 'Shalin@2516',
-                'Parthi': 'Parthi@1207'
+        function logout() {
+            if (messageListener) {
+                messageListener();
+                messageListener = null;
+            }
+            
+            currentUser = '';
+            isLoggedIn = false;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('messages').innerHTML = '';
+            messages = [];
+            showNotification('Logged out successfully!', 'success');
+        }
+
+        function showChat() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('chatContainer').style.display = 'flex';
+            document.getElementById('chatTitle').textContent = `Welcome ${currentUser}`;
+            document.getElementById('messageInput').focus();
+            updateConnectionStatus();
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messageText = input.value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (!messageText) return;
+
+            // Disable send button temporarily
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+
+            const message = {
+                text: messageText,
+                sender: currentUser,
+                timestamp: serverTimestamp(),
+                createdAt: new Date() // Fallback for immediate display
             };
 
-            // DOM Elements
-            const loginForm = document.getElementById('loginForm');
-            const chatContainer = document.getElementById('chatContainer');
-            const loginBtn = document.getElementById('loginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const sendBtn = document.getElementById('sendBtn');
-            const messageInput = document.getElementById('messageInput');
-            const messagesDiv = document.getElementById('messages');
-            const chatTitle = document.getElementById('chatTitle');
-            const loginError = document.getElementById('loginError');
-
-            async function main() {
-                try {
-                    const app = initializeApp(firebaseConfig);
-                    auth = getAuth(app);
-                    db = getFirestore(app);
-
-                    // Sign in securely using the platform's provided token or anonymously.
-                    if (auth.currentUser === null) {
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                    console.log("✅ Firebase initialized and user authenticated.");
-                    loginError.textContent = "Connected. Please log in.";
-                    loginError.style.color = "#27ae60"; // Green color for success
-                    setupEventListeners();
-                } catch (error) {
-                    console.error("❌ Initialization failed:", error);
-                    loginError.textContent = "Could not connect to chat service.";
-                }
-            }
-
-            function setupEventListeners() {
-                loginBtn.addEventListener('click', handleLogin);
-                logoutBtn.addEventListener('click', handleLogout);
-                sendBtn.addEventListener('click', sendMessage);
-                messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') sendMessage();
-                });
-            }
-
-            function handleLogin() {
-                const username = document.getElementById('username').value.trim();
-                const password = document.getElementById('password').value;
-
-                if (users[username] && users[username] === password) {
-                    currentUser = username;
-                    loginForm.style.display = 'none';
-                    chatContainer.style.display = 'flex';
-                    chatTitle.textContent = `Welcome, ${currentUser}`;
-                    setupRealtimeListener();
-                    requestNotificationPermission();
+            try {
+                if (isFirebaseConnected) {
+                    console.log('📤 Sending message to Firebase:', messageText);
+                    await addDoc(collection(db, 'messages'), message);
+                    console.log('✅ Message sent successfully');
+                    showNotification('Message sent!', 'success');
                 } else {
-                    loginError.style.color = "#e74c3c"; // Red for error
-                    loginError.textContent = 'Invalid username or password';
+                    showNotification('Firebase not connected - message not synced', 'error');
                 }
+            } catch (error) {
+                console.error('❌ Error sending message:', error);
+                showNotification('Failed to send: ' + error.code, 'error');
             }
 
-            function handleLogout() {
-                if (messageListener) {
-                    messageListener(); // Detach the listener
-                    messageListener = null;
-                }
-                currentUser = null;
-                loginForm.style.display = 'block';
-                chatContainer.style.display = 'none';
+            input.value = '';
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+        }
+
+        function setupRealtimeListener() {
+            if (!isFirebaseConnected) {
+                console.log('⚠️ Firebase not connected, cannot setup listener');
+                return;
+            }
+
+            console.log('🔄 Setting up realtime listener...');
+            
+            const messagesRef = collection(db, 'messages');
+            const q = query(messagesRef, orderBy('timestamp', 'asc'));
+            
+            messageListener = onSnapshot(q, (snapshot) => {
+                console.log('📨 Received snapshot with', snapshot.size, 'messages');
+                const messagesDiv = document.getElementById('messages');
                 messagesDiv.innerHTML = '';
-            }
-
-            async function sendMessage() {
-                const text = messageInput.value.trim();
-                if (text === '' || !currentUser) return;
-
-                const message = {
-                    text: text,
-                    sender: currentUser,
-                    timestamp: serverTimestamp(),
-                };
-
-                try {
-                    // This is the correct, secure path for this platform.
-                    const messagesCollection = collection(db, `artifacts/${appId}/public/data/messages`);
-                    await addDoc(messagesCollection, message);
-                    messageInput.value = '';
-                } catch (error) {
-                    console.error("❌ Error sending message:", error);
-                    alert("Failed to send message. Check console for details.");
-                }
-            }
-
-            function setupRealtimeListener() {
-                // This is the correct, secure path for this platform.
-                const messagesCollection = collection(db, `artifacts/${appId}/public/data/messages`);
-                const q = query(messagesCollection, orderBy('timestamp', 'asc'));
-
-                messageListener = onSnapshot(q, (snapshot) => {
-                    snapshot.docChanges().forEach((change) => {
-                        if (change.type === "added") {
-                            const data = change.doc.data();
-                            displayMessage(data);
-
-                            if (!isInitialLoad && data.sender !== currentUser) {
-                                sendBrowserNotification(data.sender, data.text);
-                            }
-                        }
-                    });
-                    
-                    isInitialLoad = false;
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                }, (error) => {
-                    console.error("❌ Error with message listener:", error);
-                     alert("Connection to chat room failed. Please reload.");
+                messages = [];
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const message = {
+                        id: doc.id,
+                        text: data.text,
+                        sender: data.sender,
+                        timestamp: data.timestamp ? data.timestamp.toDate() : data.createdAt
+                    };
+                    messages.push(message);
+                    displayMessage(message);
                 });
-            }
-
-            function displayMessage(message) {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${message.sender === currentUser ? 'own' : 'other'}`;
                 
-                const time = message.timestamp ? message.timestamp.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
-                
-                messageDiv.innerHTML = `
-                    <div>${message.text}</div>
-                    <div class="message-info">${message.sender} • ${time}</div>
-                `;
-                
-                messagesDiv.appendChild(messageDiv);
+                // Scroll to bottom
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            }
+            }, (error) => {
+                console.error('❌ Error listening to messages:', error);
+                showNotification('Connection error: ' + error.code, 'error');
+            });
+        }
 
-            function requestNotificationPermission() {
-                if ('Notification' in window && Notification.permission === 'default') {
-                    Notification.requestPermission();
-                }
-            }
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sender === currentUser ? 'own' : 'other'}`;
+            
+            const time = message.timestamp ? message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'now';
+            const date = message.timestamp ? message.timestamp.toLocaleDateString() : 'today';
+            
+            messageDiv.innerHTML = `
+                <div>${message.text}</div>
+                <div class="message-info">${message.sender} • ${time} • ${date}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
 
-            function sendBrowserNotification(sender, text) {
-                if (document.hidden && Notification.permission === 'granted') {
-                    new Notification(`New message from ${sender}`, {
-                        body: text,
-                        icon: 'https://cdn-icons-png.flaticon.com/512/1384/1384069.png' 
+            // Show notification for new messages from other users
+            if (message.sender !== currentUser && isLoggedIn) {
+                showNotification(`New message from ${message.sender}!`, 'success');
+                
+                // Browser notification
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`New message from ${message.sender}`, {
+                        body: message.text,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg6WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
                     });
                 }
             }
+        }
 
-            main();
-        });
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Request notification permission when page loads
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotification('Browser notifications enabled!', 'success');
+                }
+            });
+        }
+
+        // Initialize connection status on load
+        updateConnectionStatus();
     </script>
 </body>
 </html>

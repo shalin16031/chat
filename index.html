@@ -93,6 +93,7 @@
             color: #e74c3c;
             margin-top: 10px;
             font-weight: bold;
+            min-height: 1.2em;
         }
 
         .chat-container {
@@ -243,13 +244,21 @@
     <!-- Firebase SDK and App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         document.addEventListener('DOMContentLoaded', () => {
+            // IMPORTANT: The platform provides these variables automatically.
+            // Do NOT add your own firebaseConfig object.
             const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
             const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'private-chat-app';
+
+            // Check if the firebaseConfig is empty, which means it failed to load.
+            if (!firebaseConfig.apiKey) {
+                document.getElementById('loginError').textContent = "Connection to chat server failed. Please ensure Firebase is set up correctly.";
+                return;
+            }
 
             let db, auth;
             let currentUser = null;
@@ -261,6 +270,7 @@
                 'Parthi': 'Parthi@1207'
             };
 
+            // DOM Elements
             const loginForm = document.getElementById('loginForm');
             const chatContainer = document.getElementById('chatContainer');
             const loginBtn = document.getElementById('loginBtn');
@@ -277,6 +287,7 @@
                     auth = getAuth(app);
                     db = getFirestore(app);
 
+                    // Sign in securely using the platform's provided token or anonymously.
                     if (auth.currentUser === null) {
                         if (initialAuthToken) {
                             await signInWithCustomToken(auth, initialAuthToken);
@@ -284,10 +295,12 @@
                             await signInAnonymously(auth);
                         }
                     }
-                    console.log("Firebase initialized and user authenticated.");
+                    console.log("✅ Firebase initialized and user authenticated.");
+                    loginError.textContent = "Connected. Please log in.";
+                    loginError.style.color = "#27ae60"; // Green color for success
                     setupEventListeners();
                 } catch (error) {
-                    console.error("Initialization failed:", error);
+                    console.error("❌ Initialization failed:", error);
                     loginError.textContent = "Could not connect to chat service.";
                 }
             }
@@ -313,6 +326,7 @@
                     setupRealtimeListener();
                     requestNotificationPermission();
                 } else {
+                    loginError.style.color = "#e74c3c"; // Red for error
                     loginError.textContent = 'Invalid username or password';
                 }
             }
@@ -325,7 +339,7 @@
                 currentUser = null;
                 loginForm.style.display = 'block';
                 chatContainer.style.display = 'none';
-                messagesDiv.innerHTML = ''; // Clear chat history
+                messagesDiv.innerHTML = '';
             }
 
             async function sendMessage() {
@@ -339,25 +353,22 @@
                 };
 
                 try {
-                    // FIX: Use the correct collection path
-                    await addDoc(collection(db, `artifacts/${appId}/public/data/messages`), message);
+                    // This is the correct, secure path for this platform.
+                    const messagesCollection = collection(db, `artifacts/${appId}/public/data/messages`);
+                    await addDoc(messagesCollection, message);
                     messageInput.value = '';
                 } catch (error) {
-                    console.error("Error sending message:", error);
+                    console.error("❌ Error sending message:", error);
+                    alert("Failed to send message. Check console for details.");
                 }
             }
 
             function setupRealtimeListener() {
-                // FIX: Use the correct collection path
-                const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
-                const q = query(messagesRef, orderBy('timestamp', 'asc'));
+                // This is the correct, secure path for this platform.
+                const messagesCollection = collection(db, `artifacts/${appId}/public/data/messages`);
+                const q = query(messagesCollection, orderBy('timestamp', 'asc'));
 
                 messageListener = onSnapshot(q, (snapshot) => {
-                    if (snapshot.empty) {
-                        console.log("No messages yet.");
-                        return;
-                    }
-
                     snapshot.docChanges().forEach((change) => {
                         if (change.type === "added") {
                             const data = change.doc.data();
@@ -372,7 +383,8 @@
                     isInitialLoad = false;
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }, (error) => {
-                    console.error("Error with message listener:", error);
+                    console.error("❌ Error with message listener:", error);
+                     alert("Connection to chat room failed. Please reload.");
                 });
             }
 
@@ -398,7 +410,6 @@
             }
 
             function sendBrowserNotification(sender, text) {
-                // Only show notification if the window is not focused
                 if (document.hidden && Notification.permission === 'granted') {
                     new Notification(`New message from ${sender}`, {
                         body: text,

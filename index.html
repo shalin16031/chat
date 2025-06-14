@@ -271,6 +271,54 @@
             background: #e74c3c;
         }
 
+        /* Enhanced notification styles */
+        .notification.message-alert {
+            background: #f39c12;
+            border-left: 5px solid #e67e22;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: translateX(400px) scale(0.3);
+                opacity: 0;
+            }
+            50% {
+                transform: translateX(-20px) scale(1.05);
+            }
+            70% {
+                transform: translateX(10px) scale(0.9);
+            }
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Flash notification overlay */
+        .flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(52, 152, 219, 0.1);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .flash-overlay.show {
+            opacity: 1;
+            animation: flashAlert 0.6s ease-out;
+        }
+
+        @keyframes flashAlert {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
         .setup-instructions {
             background: #f8f9fa;
             border: 2px solid #27ae60;
@@ -284,6 +332,35 @@
         .setup-instructions h3 {
             color: #2c3e50;
             margin-bottom: 15px;
+        }
+
+        .notification-settings {
+            background: #e8f4f8;
+            border: 1px solid #3498db;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .notification-settings button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 12px;
+        }
+
+        .notification-settings button:hover {
+            background: #2980b9;
+        }
+
+        .notification-settings button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
         }
 
         @media (max-width: 480px) {
@@ -309,6 +386,13 @@
             <h3>🔥 Firebase Connected!</h3>
             <p><strong>Status:</strong> Ready for cross-device messaging</p>
             <p>Both users can now chat in real-time across different devices!</p>
+            
+            <div class="notification-settings">
+                <p><strong>🔔 Notification Settings</strong></p>
+                <button id="notifBtn">Enable Browser Notifications</button>
+                <button id="soundBtn">Test Sound</button>
+                <button id="testBtn">Test Notification</button>
+            </div>
         </div>
 
         <!-- Login Form -->
@@ -343,6 +427,14 @@
 
     <!-- Notification -->
     <div class="notification" id="notification"></div>
+    
+    <!-- Flash overlay for visual alerts -->
+    <div class="flash-overlay" id="flashOverlay"></div>
+
+    <!-- Audio elements for sound notifications -->
+    <audio id="messageSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEeByB+zPTUfDEGj4kMAAWp4+HHY0LKrT8oMwAAFgDcIjgJbE9VEChQRU4QHjsqNQAAGAHqOkYLf2ROEmFCQUIoO0wwTQUGHQLYLj0JcUxUByJSSmMgLy8rWAQKEgL5SEoMeGhGF3xJNxwrLTYqYwgFGgKgN0UNID4DnwAAGgDySlgNeVxIFWRNT0AqKjogYgkGGQPNLkwNKnpFBSBQSVgfOkIjVAkMBwP0RlQNbVhIJ4NMSjYvLDoXZAkHFAO7O0cOIT0AAGBNRzIrJjcXXgUHBgTQTE8OeGFGFWxRSUAqJy0kYwQHDwPhMEUOAAB+S0ExMjEtN1YFDAEETFNGDmtYRCaGRTI9Ki46E2IIChQDNkE5D1laBjdxSzYrJzQeYAQOEgOZQUUOXmBGGmhOSTAqKjAXYAUPEQOON0QOdm5FFn9MNjkqJTEVYQkJBQRQTkgOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJBQRQT0kOUmlGH3FMNTkqJzEXYQkJ" type="audio/wav">
+    </audio>
 
     <!-- Firebase SDK v9 (modular) -->
     <script type="module">
@@ -386,14 +478,121 @@
         let messages = [];
         let isLoggedIn = false;
         let messageListener = null;
+        let lastMessageCount = 0;
+
+        // Enhanced notification system
+        function playNotificationSound() {
+            try {
+                const audio = document.getElementById('messageSound');
+                audio.currentTime = 0;
+                audio.play().catch(e => {
+                    console.log('Audio play failed:', e);
+                    // Fallback: create a simple beep using Web Audio API
+                    createBeepSound();
+                });
+            } catch (error) {
+                console.log('Sound notification error:', error);
+                createBeepSound();
+            }
+        }
+
+        function createBeepSound() {
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 800;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (error) {
+                console.log('Web Audio API not supported:', error);
+            }
+        }
+
+        function showFlashAlert() {
+            const flashOverlay = document.getElementById('flashOverlay');
+            flashOverlay.classList.add('show');
+            setTimeout(() => {
+                flashOverlay.classList.remove('show');
+            }, 600);
+        }
+
+        function showEnhancedNotification(message, sender, type = 'message-alert') {
+            const notification = document.getElementById('notification');
+            notification.innerHTML = `
+                <strong>💬 ${sender}</strong><br>
+                ${message}
+            `;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    const btn = document.getElementById('notifBtn');
+                    if (permission === 'granted') {
+                        showNotification('Browser notifications enabled!', 'success');
+                        btn.textContent = 'Notifications Enabled ✓';
+                        btn.disabled = true;
+                    } else {
+                        showNotification('Notification permission denied', 'error');
+                        btn.textContent = 'Permission Denied';
+                    }
+                });
+            } else {
+                showNotification('Browser notifications not supported', 'error');
+            }
+        }
+
+        function testSound() {
+            playNotificationSound();
+            showNotification('Sound test played!', 'success');
+        }
+
+        function testNotification() {
+            showEnhancedNotification('This is a test notification!', 'Test User', 'message-alert');
+            playNotificationSound();
+            showFlashAlert();
+        }
+
+        // Add event listeners after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('notifBtn').addEventListener('click', requestNotificationPermission);
+            document.getElementById('soundBtn').addEventListener('click', testSound);
+            document.getElementById('testBtn').addEventListener('click', testNotification);
+        });
+            try {
+                const audio = document.getElementById('messageSound');
+                audio.currentTime = 0;
+                audio.play().catch(e => {
+                    console.log('Audio play failed:', e);
+                    // Fallback: create a simple beep using Web Audio API
+                    createBeepSound();
+                });
+            } catch (error) {
+                console.log('Sound notification error:', error);
+                createBeepSound();
+            }
+        }
 
         // Make functions globally available
         window.login = login;
         window.logout = logout;
         window.sendMessage = sendMessage;
         window.handleKeyPress = handleKeyPress;
-
-        function updateConnectionStatus() {
             const indicator = document.getElementById('statusIndicator');
             if (isFirebaseConnected) {
                 indicator.classList.remove('offline');
@@ -402,6 +601,35 @@
                 indicator.classList.add('offline');
                 indicator.title = 'Offline - Demo mode only';
             }
+        }
+
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    const btn = document.getElementById('notifBtn');
+                    if (permission === 'granted') {
+                        showNotification('Browser notifications enabled!', 'success');
+                        btn.textContent = 'Notifications Enabled ✓';
+                        btn.disabled = true;
+                    } else {
+                        showNotification('Notification permission denied', 'error');
+                        btn.textContent = 'Permission Denied';
+                    }
+                });
+            } else {
+                showNotification('Browser notifications not supported', 'error');
+            }
+        }
+
+        function testSound() {
+            playNotificationSound();
+            showNotification('Sound test played!', 'success');
+        }
+
+        function testNotification() {
+            showEnhancedNotification('This is a test notification!', 'Test User', 'message-alert');
+            playNotificationSound();
+            showFlashAlert();
         }
 
         function login() {
@@ -440,6 +668,7 @@
             
             currentUser = '';
             isLoggedIn = false;
+            lastMessageCount = 0;
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('chatContainer').style.display = 'none';
             document.getElementById('username').value = '';
@@ -509,6 +738,8 @@
                 console.log('📨 Received snapshot with', snapshot.size, 'messages');
                 const messagesDiv = document.getElementById('messages');
                 messagesDiv.innerHTML = '';
+                
+                const oldMessageCount = messages.length;
                 messages = [];
                 
                 snapshot.forEach((doc) => {
@@ -522,6 +753,31 @@
                     messages.push(message);
                     displayMessage(message);
                 });
+                
+                // Check for new messages from other users
+                if (isLoggedIn && messages.length > oldMessageCount) {
+                    const newMessages = messages.slice(oldMessageCount);
+                    newMessages.forEach(message => {
+                        if (message.sender !== currentUser) {
+                            // Enhanced notification for new messages
+                            showEnhancedNotification(
+                                message.text, 
+                                message.sender, 
+                                'message-alert'
+                            );
+                            playNotificationSound();
+                            showFlashAlert();
+                            
+                            // Browser notification
+                            if ('Notification' in window && Notification.permission === 'granted') {
+                                new Notification(`New message from ${message.sender}`, {
+                                    body: message.text,
+                                    icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS5VQzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg2WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
+                                });
+                            }
+                        }
+                    });
+                }
                 
                 // Scroll to bottom
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -545,19 +801,6 @@
             `;
             
             messagesDiv.appendChild(messageDiv);
-
-            // Show notification for new messages from other users
-            if (message.sender !== currentUser && isLoggedIn) {
-                showNotification(`New message from ${message.sender}!`, 'success');
-                
-                // Browser notification
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`New message from ${message.sender}`, {
-                        body: message.text,
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg6WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
-                    });
-                }
-            }
         }
 
         function handleKeyPress(event) {
@@ -577,17 +820,19 @@
             }, 3000);
         }
 
-        // Request notification permission when page loads
-        if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    showNotification('Browser notifications enabled!', 'success');
-                }
-            });
-        }
-
-        // Initialize connection status on load
+        // Initialize connection status and event listeners
         updateConnectionStatus();
-    </script>
-</body>
-</html>
+        
+        // Add event listeners after DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('notifBtn').addEventListener('click', requestNotificationPermission);
+            document.getElementById('soundBtn').addEventListener('click', testSound);
+            document.getElementById('testBtn').addEventListener('click', testNotification);
+            
+            // Request notification permission automatically
+            if ('Notification' in window && Notification.permission === 'default') {
+                setTimeout(() => {
+                    requestNotificationPermission();
+                }, 2000);
+            }
+        });

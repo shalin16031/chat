@@ -3,293 +3,627 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Classic Chat</title>
-    <!-- Tailwind CSS for styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for a classic look -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Private Chat - Shalin & Parthi</title>
     <style>
-        /* Custom styles for a better chat experience */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Times New Roman', serif;
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        #chat-messages {
-            scroll-behavior: smooth;
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+            padding: 20px;
         }
-        /* Custom scrollbar for a cleaner look */
-        #chat-messages::-webkit-scrollbar {
-            width: 6px;
+
+        .login-form, .chat-container {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
         }
-        #chat-messages::-webkit-scrollbar-track {
-            background: #f1f1f1;
+
+        .login-form {
+            padding: 40px 30px;
+            text-align: center;
         }
-        #chat-messages::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 3px;
+
+        .login-form h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 28px;
+            font-weight: bold;
         }
-        #chat-messages::-webkit-scrollbar-thumb:hover {
-            background: #555;
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
         }
-        .hidden {
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #2980b9;
+        }
+
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .chat-container {
+            height: 80vh;
             display: none;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: #34495e;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h2 {
+            font-size: 24px;
+        }
+
+        .status-indicator {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.offline {
+            background: #e74c3c;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .logout-btn {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #ecf0f1;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.own {
+            background: #3498db;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.other {
+            background: white;
+            color: #2c3e50;
+            border: 1px solid #bdc3c7;
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-info {
+            font-size: 11px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        .message.own .message-info {
+            text-align: right;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #bdc3c7;
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .message-input:focus {
+            border-color: #3498db;
+        }
+
+        .send-btn {
+            padding: 12px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .send-btn:hover {
+            background: #2980b9;
+        }
+
+        .send-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .setup-instructions {
+            background: #f8f9fa;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .setup-instructions h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .setup-instructions code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .setup-instructions ol {
+            margin-left: 20px;
+        }
+
+        .setup-instructions li {
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .login-form {
+                padding: 30px 20px;
+            }
+            
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body>
+    <div class="container">
+        <!-- Setup Instructions -->
+        <div class="setup-instructions">
+            <h3>🔧 Setup Required for Cross-Device Chat</h3>
+            <p>To make this chat work across multiple devices, you need to:</p>
+            <ol>
+                <li>Go to <a href="https://firebase.google.com" target="_blank">Firebase Console</a></li>
+                <li>Create a new project</li>
+                <li>Enable Firestore Database</li>
+                <li>Copy your Firebase config and replace the config below</li>
+                <li>Deploy this HTML file to a web hosting service</li>
+            </ol>
+            <p><strong>Current Status:</strong> <span style="color: #e74c3c;">⚠️ Demo Mode - Messages won't sync between devices</span></p>
+        </div>
 
-    <!-- Login View -->
-    <div id="login-view" class="flex items-center justify-center h-screen">
-        <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm">
-            <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Classic Chat</h1>
-            <div class="space-y-4">
-                <input type="text" id="username" placeholder="Username" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="password" id="password" placeholder="Password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <!-- Login Form -->
+        <div class="login-form" id="loginForm">
+            <h1>Private Chat</h1>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter your username">
             </div>
-            <button id="login-button" class="w-full bg-blue-600 text-white py-3 mt-6 rounded-lg font-semibold hover:bg-blue-700 transition duration-300">Login</button>
-            <p id="error-message" class="text-red-500 text-center mt-4 text-sm hidden">Invalid username or password.</p>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password">
+            </div>
+            <button class="login-btn" onclick="login()">Login</button>
+            <div class="error" id="loginError"></div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container" id="chatContainer">
+            <div class="chat-header">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <h2 id="chatTitle">Private Chat</h2>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+            <div class="messages" id="messages"></div>
+            <div class="input-area">
+                <input type="text" class="message-input" id="messageInput" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
         </div>
     </div>
 
-    <!-- Chat View -->
-    <div id="chat-view" class="hidden h-screen flex-col">
-        <!-- Header -->
-        <header class="bg-white shadow-md p-4 flex justify-between items-center">
-            <h1 class="text-xl font-bold text-gray-800">Classic Chat</h1>
-            <button id="logout-button" class="text-sm text-blue-600 hover:underline">Logout</button>
-        </header>
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
 
-        <!-- Messages Area -->
-        <main id="chat-messages" class="flex-1 p-4 space-y-4 overflow-y-auto bg-gray-50">
-            <!-- Messages will be injected here by JavaScript -->
-        </main>
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
 
-        <!-- Message Input Area -->
-        <footer class="bg-white p-4 border-t border-gray-200">
-            <div class="flex items-center space-x-3">
-                <input type="text" id="message-input" placeholder="Type a message..." class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button id="send-button" class="bg-blue-600 text-white rounded-full p-3 flex items-center justify-center hover:bg-blue-700 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-send"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                </button>
-            </div>
-        </footer>
-    </div>
+    <script>
+        // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
+       const firebaseConfig = {  apiKey: "AIzaSyC39AyuOY9zmaafShioTAxLJ1UeIi8b8YE",  
+                               authDomain: "done-a9c02.firebaseapp.com",  
+                               projectId: "done-a9c02",  
+                               storageBucket: "done-a9c02.firebasestorage.app",  
+                               messagingSenderId: "913187617467",  
+                               appId: "1:913187617467:web:81cf7623e067669f30879e",  
+                               measurementId: "G-Y6N5SDGSSL"
+                              };
 
-    <!-- Firebase and App Logic -->
-    <script type="module">
-        // Import necessary functions from the Firebase SDK
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // --- This script waits for the entire page to be loaded before running ---
-        document.addEventListener('DOMContentLoaded', () => {
+        // Initialize Firebase (will fail in demo mode)
+        let db = null;
+        let isFirebaseConnected = false;
+
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            isFirebaseConnected = true;
+            console.log('Firebase connected successfully');
+        } catch (error) {
+            console.log('Firebase connection failed - running in demo mode');
+            isFirebaseConnected = false;
+        }
+
+        // User credentials
+        const users = {
+            'Shalin': 'Shalin@2516',
+            'Parthi': 'Parthi@1207'
+        };
+
+        let currentUser = '';
+        let messages = [];
+        let messageId = 0;
+        let isLoggedIn = false;
+        let messageListener = null;
+
+        function updateConnectionStatus() {
+            const indicator = document.getElementById('statusIndicator');
+            if (isFirebaseConnected) {
+                indicator.classList.remove('offline');
+                indicator.title = 'Connected - Messages sync across devices';
+            } else {
+                indicator.classList.add('offline');
+                indicator.title = 'Offline - Demo mode only';
+            }
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.textContent = 'Please enter both username and password';
+                return;
+            }
+
+            if (users[username] && users[username] === password) {
+                currentUser = username;
+                isLoggedIn = true;
+                showChat();
+                showNotification(`Welcome ${username}!`, 'success');
+                errorDiv.textContent = '';
+                
+                if (isFirebaseConnected) {
+                    setupRealtimeListener();
+                } else {
+                    showNotification('Running in demo mode - messages won\'t sync', 'error');
+                }
+            } else {
+                errorDiv.textContent = 'Invalid username or password';
+                showNotification('Login failed!', 'error');
+            }
+        }
+
+        function logout() {
+            if (messageListener) {
+                messageListener();
+                messageListener = null;
+            }
             
-            // --- Environment Variables (DO NOT EDIT) ---
-            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
-            // --- End of Uneditable Lines ---
+            currentUser = '';
+            isLoggedIn = false;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('messages').innerHTML = '';
+            messages = [];
+            showNotification('Logged out successfully!', 'success');
+        }
 
-            let app, db, auth;
-            let currentUser = null;
-            let userId = null;
-            let messagesUnsubscribe = null;
-            let isInitialLoad = true;
+        function showChat() {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('chatContainer').style.display = 'flex';
+            document.getElementById('chatTitle').textContent = `Welcome ${currentUser}`;
+            document.getElementById('messageInput').focus();
+            updateConnectionStatus();
+            loadMessages();
+        }
 
-            // --- User Credentials ---
-            const users = {
-                "Shalin": "Shalin@2516",
-                "Parthi": "Parthi@1207"
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const messageText = input.value.trim();
+            const sendBtn = document.getElementById('sendBtn');
+
+            if (!messageText) return;
+
+            // Disable send button temporarily
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Sending...';
+
+            const message = {
+                text: messageText,
+                sender: currentUser,
+                timestamp: new Date(),
+                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
             };
 
-            // --- DOM Element References ---
-            const loginView = document.getElementById('login-view');
-            const chatView = document.getElementById('chat-view');
-            const loginButton = document.getElementById('login-button');
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            const errorMessage = document.getElementById('error-message');
-            const logoutButton = document.getElementById('logout-button');
-            const messagesContainer = document.getElementById('chat-messages');
-            const messageInput = document.getElementById('message-input');
-            const sendButton = document.getElementById('send-button');
-
-            // --- Main Application Logic ---
-            async function main() {
-                try {
-                    // 1. Initialize Firebase
-                    app = initializeApp(firebaseConfig);
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    // 2. Set up an authentication listener
-                    // This promise will resolve when the first authentication check is complete.
-                    const authReady = new Promise((resolve) => {
-                        const unsubscribe = onAuthStateChanged(auth, user => {
-                            if (user) {
-                                userId = user.uid;
-                                console.log("Firebase Auth ready. User ID:", userId);
-                                unsubscribe(); // Stop listening after we get the first user
-                                resolve(true); 
-                            }
-                        });
+            try {
+                if (isFirebaseConnected) {
+                    // Send to Firebase
+                    await db.collection('messages').add({
+                        ...message,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
-                    
-                    // 3. Sign in the user
-                    if (auth.currentUser === null) {
-                         if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-
-                    // 4. Wait for the authentication to be fully ready
-                    await authReady;
-
-                    // 5. Now that Firebase is ready, attach event listeners
-                    setupEventListeners();
-                    console.log("Chat service connected. Ready to log in.");
-
-                } catch (error) {
-                    console.error("Firebase initialization failed:", error);
-                    errorMessage.textContent = "Could not connect to chat service.";
-                    errorMessage.classList.remove('hidden');
-                }
-            }
-            
-            function setupEventListeners() {
-                loginButton.addEventListener('click', handleLogin);
-                passwordInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') handleLogin();
-                });
-
-                sendButton.addEventListener('click', sendMessage);
-                messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        sendMessage();
-                    }
-                });
-                
-                logoutButton.addEventListener('click', () => {
-                    window.location.reload();
-                });
-            }
-            
-            function handleLogin() {
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value;
-
-                if (users[username] === password) {
-                    currentUser = username;
-                    errorMessage.classList.add('hidden');
-                    loginView.classList.add('hidden');
-                    chatView.style.display = 'flex'; // Use style.display to show flex container
-                    chatView.classList.remove('hidden');
-                    
-                    setupChat();
+                    showNotification('Message sent!', 'success');
                 } else {
-                    errorMessage.textContent = "Invalid username or password.";
-                    errorMessage.classList.remove('hidden');
+                    // Demo mode - just add locally
+                    messages.push(message);
+                    displayMessage(message);
+                    showNotification('Demo mode - message not synced', 'error');
                 }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showNotification('Failed to send message', 'error');
             }
 
-            function setupChat() {
-                if (messagesUnsubscribe) messagesUnsubscribe();
-                requestNotificationPermission();
-
-                const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
-                const q = query(messagesRef);
-
-                messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-                    const messages = [];
-                    snapshot.forEach(doc => {
-                        messages.push({ id: doc.id, ...doc.data() });
-                    });
-                    messages.sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
-                    renderMessages(messages);
-                    if (!isInitialLoad && messages.length > 0) {
-                        const lastMessage = messages[messages.length - 1];
-                        if (lastMessage.sender !== currentUser) {
-                            showNotification(`New message from ${lastMessage.sender}`, lastMessage.text);
-                        }
-                    }
-                    isInitialLoad = false;
-                });
-            }
+            input.value = '';
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
             
-            function renderMessages(messages) {
-                messagesContainer.innerHTML = '';
-                messages.forEach(msg => {
-                    const isCurrentUser = msg.sender === currentUser;
-                    const messageWrapper = document.createElement('div');
-                    messageWrapper.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`;
+            // Scroll to bottom
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
 
-                    const messageBubble = document.createElement('div');
-                    messageBubble.className = `max-w-xs md:max-w-md p-3 rounded-2xl shadow`;
-                    if (isCurrentUser) {
-                        messageBubble.classList.add('bg-blue-600', 'text-white');
-                    } else {
-                        messageBubble.classList.add('bg-white', 'text-gray-800');
-                    }
+        function setupRealtimeListener() {
+            if (!isFirebaseConnected) return;
 
-                    const senderName = document.createElement('p');
-                    senderName.className = 'text-xs font-bold mb-1';
-                    senderName.textContent = msg.sender;
-                    if (isCurrentUser) {
-                        senderName.classList.add('text-blue-200');
-                    } else {
-                        senderName.classList.add('text-gray-500');
-                    }
-
-                    const messageText = document.createElement('p');
-                    messageText.textContent = msg.text;
-
-                    messageBubble.appendChild(senderName);
-                    messageBubble.appendChild(messageText);
-                    messageWrapper.appendChild(messageBubble);
-                    messagesContainer.appendChild(messageWrapper);
-                });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-
-            async function sendMessage() {
-                const text = messageInput.value.trim();
-                if (text === '' || !currentUser) return;
-                try {
-                    const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
-                    await addDoc(messagesRef, {
-                        text: text,
-                        sender: currentUser,
-                        timestamp: serverTimestamp()
+            messageListener = db.collection('messages')
+                .orderBy('timestamp', 'asc')
+                .onSnapshot((snapshot) => {
+                    const messagesDiv = document.getElementById('messages');
+                    messagesDiv.innerHTML = '';
+                    messages = [];
+                    
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        const message = {
+                            id: doc.id,
+                            text: data.text,
+                            sender: data.sender,
+                            timestamp: data.timestamp ? data.timestamp.toDate() : new Date()
+                        };
+                        messages.push(message);
+                        displayMessage(message);
                     });
-                    messageInput.value = '';
-                } catch (error) {
-                    console.error("Error sending message:", error);
-                }
-            }
+                    
+                    // Scroll to bottom
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }, (error) => {
+                    console.error('Error listening to messages:', error);
+                    showNotification('Connection error', 'error');
+                });
+        }
 
-            function requestNotificationPermission() {
-                if ('Notification' in window && Notification.permission !== 'granted') {
-                    Notification.requestPermission();
-                }
-            }
+        function displayMessage(message) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${message.sender === currentUser ? 'own' : 'other'}`;
             
-            function showNotification(title, body) {
+            const time = message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const date = message.timestamp.toLocaleDateString();
+            
+            messageDiv.innerHTML = `
+                <div>${message.text}</div>
+                <div class="message-info">${message.sender} • ${time} • ${date}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+
+            // Show notification for new messages from other users
+            if (message.sender !== currentUser && isLoggedIn) {
+                showNotification(`New message from ${message.sender}!`, 'success');
+                
+                // Browser notification
                 if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(title, {
-                        body: body,
-                        icon: 'https://placehold.co/192x192/000000/FFFFFF?text=Chat'
+                    new Notification(`New message from ${message.sender}`, {
+                        body: message.text,
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg2WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
                     });
                 }
             }
+        }
 
-            // --- Start the App ---
-            main();
-        });
+        function loadMessages() {
+            if (!isFirebaseConnected) {
+                // Demo mode - show sample messages
+                const sampleMessages = [
+                    {
+                        id: 'demo1',
+                        text: 'This is demo mode. Set up Firebase to sync messages across devices!',
+                        sender: 'System',
+                        timestamp: new Date()
+                    }
+                ];
+                
+                sampleMessages.forEach(msg => {
+                    messages.push(msg);
+                    displayMessage(msg);
+                });
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Request notification permission when page loads
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    showNotification('Browser notifications enabled!', 'success');
+                }
+            });
+        }
+
+        // Initialize connection status on load
+        updateConnectionStatus();
     </script>
 </body>
 </html>

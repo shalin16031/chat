@@ -32,6 +32,9 @@
         #chat-messages::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -50,7 +53,7 @@
     </div>
 
     <!-- Chat View -->
-    <div id="chat-view" class="hidden h-screen flex flex-col">
+    <div id="chat-view" class="hidden h-screen flex-col">
         <!-- Header -->
         <header class="bg-white shadow-md p-4 flex justify-between items-center">
             <h1 class="text-xl font-bold text-gray-800">Classic Chat</h1>
@@ -80,235 +83,213 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        // --- DO NOT EDIT THESE LINES ---
-        // These variables are automatically provided by the environment.
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
-        // --- END OF UNEDITABLE LINES ---
-
-        let app, db, auth;
-        let currentUser = null;
-        let userId = null;
-        let messagesUnsubscribe = null;
-        let isInitialLoad = true;
-        let isAuthReady = false; // Flag to track if Firebase auth is complete
-
-        // --- User Credentials (as requested) ---
-        const users = {
-            "Shalin": "Shalin@2516",
-            "Parthi": "Parthi@1207"
-        };
-
-        // --- DOM Element References ---
-        const loginView = document.getElementById('login-view');
-        const chatView = document.getElementById('chat-view');
-        const loginButton = document.getElementById('login-button');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const errorMessage = document.getElementById('error-message');
-        const logoutButton = document.getElementById('logout-button');
-        const messagesContainer = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-
-        // --- Initialization ---
-        async function initializeFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // This listener fires when the authentication state changes.
-                onAuthStateChanged(auth, user => {
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        console.log("Firebase Auth ready. User ID:", userId);
-                        // If we have already logged in via the form, we can now setup the chat.
-                        if (currentUser) {
-                           setupChat();
-                        }
-                    } else {
-                        // User is signed out.
-                        userId = null;
-                        isAuthReady = false;
-                        console.log("User is signed out.");
-                    }
-                });
-                
-                // Authenticate with the environment using the provided token or fall back to anonymous.
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-            } catch (error) {
-                console.error("Firebase initialization failed:", error);
-                errorMessage.textContent = "Could not connect to chat service.";
-                errorMessage.classList.remove('hidden');
-            }
-        }
-        
-        // --- Authentication Logic ---
-        function handleLogin() {
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value;
-
-            if (users[username] === password) {
-                currentUser = username;
-                errorMessage.classList.add('hidden');
-                loginView.classList.add('hidden');
-                chatView.classList.remove('hidden');
-                chatView.classList.add('flex');
-                
-                // If Firebase is already authenticated, we can proceed. Otherwise, the 
-                // onAuthStateChanged listener will handle calling setupChat().
-                if (isAuthReady) {
-                    setupChat();
-                }
-
-            } else {
-                errorMessage.textContent = "Invalid username or password.";
-                errorMessage.classList.remove('hidden');
-            }
-        }
-
-        // --- Chat Setup ---
-        function setupChat() {
-            if (messagesUnsubscribe) messagesUnsubscribe(); // Unsubscribe from old listener if it exists
+        // --- This script waits for the entire page to be loaded before running ---
+        document.addEventListener('DOMContentLoaded', () => {
             
-            requestNotificationPermission();
+            // --- Environment Variables (DO NOT EDIT) ---
+            const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-chat-app';
+            // --- End of Uneditable Lines ---
 
-            const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
-            const q = query(messagesRef);
+            let app, db, auth;
+            let currentUser = null;
+            let userId = null;
+            let messagesUnsubscribe = null;
+            let isInitialLoad = true;
 
-            messagesUnsubscribe = onSnapshot(q, (snapshot) => {
-                const messages = [];
-                snapshot.forEach(doc => {
-                    messages.push({ id: doc.id, ...doc.data() });
-                });
+            // --- User Credentials ---
+            const users = {
+                "Shalin": "Shalin@2516",
+                "Parthi": "Parthi@1207"
+            };
 
-                // Sort messages by timestamp client-side to ensure order
-                messages.sort((a, b) => {
-                    const timeA = a.timestamp ? a.timestamp.toMillis() : 0;
-                    const timeB = b.timestamp ? b.timestamp.toMillis() : 0;
-                    return timeA - timeB;
-                });
-                
-                renderMessages(messages);
+            // --- DOM Element References ---
+            const loginView = document.getElementById('login-view');
+            const chatView = document.getElementById('chat-view');
+            const loginButton = document.getElementById('login-button');
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const errorMessage = document.getElementById('error-message');
+            const logoutButton = document.getElementById('logout-button');
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageInput = document.getElementById('message-input');
+            const sendButton = document.getElementById('send-button');
 
-                // Handle notifications for new messages after the initial load
-                if (!isInitialLoad && messages.length > 0) {
-                    const lastMessage = messages[messages.length - 1];
-                    // Only notify if the message is from the other user
-                    if (lastMessage.sender !== currentUser) {
-                        showNotification(`New message from ${lastMessage.sender}`, lastMessage.text);
+            // --- Main Application Logic ---
+            async function main() {
+                try {
+                    // 1. Initialize Firebase
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                    
+                    // 2. Set up an authentication listener
+                    // This promise will resolve when the first authentication check is complete.
+                    const authReady = new Promise((resolve) => {
+                        const unsubscribe = onAuthStateChanged(auth, user => {
+                            if (user) {
+                                userId = user.uid;
+                                console.log("Firebase Auth ready. User ID:", userId);
+                                unsubscribe(); // Stop listening after we get the first user
+                                resolve(true); 
+                            }
+                        });
+                    });
+                    
+                    // 3. Sign in the user
+                    if (auth.currentUser === null) {
+                         if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
                     }
-                }
-                isInitialLoad = false;
-            });
-        }
-        
-        // --- Message Rendering ---
-        function renderMessages(messages) {
-            messagesContainer.innerHTML = ''; // Clear existing messages
-            messages.forEach(msg => {
-                const isCurrentUser = msg.sender === currentUser;
-                const messageWrapper = document.createElement('div');
-                messageWrapper.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`;
 
-                const messageBubble = document.createElement('div');
-                messageBubble.className = `max-w-xs md:max-w-md p-3 rounded-2xl shadow`;
+                    // 4. Wait for the authentication to be fully ready
+                    await authReady;
+
+                    // 5. Now that Firebase is ready, attach event listeners
+                    setupEventListeners();
+                    console.log("Chat service connected. Ready to log in.");
+
+                } catch (error) {
+                    console.error("Firebase initialization failed:", error);
+                    errorMessage.textContent = "Could not connect to chat service.";
+                    errorMessage.classList.remove('hidden');
+                }
+            }
+            
+            function setupEventListeners() {
+                loginButton.addEventListener('click', handleLogin);
+                passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') handleLogin();
+                });
+
+                sendButton.addEventListener('click', sendMessage);
+                messageInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendMessage();
+                    }
+                });
                 
-                // FIX: Add classes one by one, not as a single string with spaces.
-                if (isCurrentUser) {
-                    messageBubble.classList.add('bg-blue-600', 'text-white');
+                logoutButton.addEventListener('click', () => {
+                    window.location.reload();
+                });
+            }
+            
+            function handleLogin() {
+                const username = usernameInput.value.trim();
+                const password = passwordInput.value;
+
+                if (users[username] === password) {
+                    currentUser = username;
+                    errorMessage.classList.add('hidden');
+                    loginView.classList.add('hidden');
+                    chatView.style.display = 'flex'; // Use style.display to show flex container
+                    chatView.classList.remove('hidden');
+                    
+                    setupChat();
                 } else {
-                    messageBubble.classList.add('bg-white', 'text-gray-800');
+                    errorMessage.textContent = "Invalid username or password.";
+                    errorMessage.classList.remove('hidden');
                 }
+            }
 
-                const senderName = document.createElement('p');
-                senderName.className = 'text-xs font-bold mb-1';
-                senderName.textContent = msg.sender;
-                 // Adjust sender name color for better contrast
-                if (isCurrentUser) {
-                    senderName.classList.add('text-blue-200');
-                } else {
-                    senderName.classList.add('text-gray-500');
-                }
+            function setupChat() {
+                if (messagesUnsubscribe) messagesUnsubscribe();
+                requestNotificationPermission();
 
-                const messageText = document.createElement('p');
-                messageText.textContent = msg.text;
-
-                messageBubble.appendChild(senderName);
-                messageBubble.appendChild(messageText);
-                messageWrapper.appendChild(messageBubble);
-                messagesContainer.appendChild(messageWrapper);
-            });
-
-            // Scroll to the bottom to show the latest message
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
-
-        // --- Sending Messages ---
-        async function sendMessage() {
-            const text = messageInput.value.trim();
-            if (text === '' || !currentUser) return; // Don't send empty messages or if not logged in
-
-            try {
                 const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
-                await addDoc(messagesRef, {
-                    text: text,
-                    sender: currentUser,
-                    timestamp: serverTimestamp() // Use server time for consistency and ordering
-                });
-                messageInput.value = ''; // Clear input field
-            } catch (error) {
-                console.error("Error sending message:", error);
-                // Optionally show a non-alert error to the user
-            }
-        }
+                const q = query(messagesRef);
 
-        // --- Notification Logic ---
-        function requestNotificationPermission() {
-            if ('Notification' in window && Notification.permission !== 'granted') {
-                Notification.requestPermission();
-            }
-        }
-        
-        function showNotification(title, body) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, {
-                    body: body,
-                    icon: 'https://placehold.co/192x192/000000/FFFFFF?text=Chat' // A generic icon
+                messagesUnsubscribe = onSnapshot(q, (snapshot) => {
+                    const messages = [];
+                    snapshot.forEach(doc => {
+                        messages.push({ id: doc.id, ...doc.data() });
+                    });
+                    messages.sort((a, b) => (a.timestamp?.toMillis() || 0) - (b.timestamp?.toMillis() || 0));
+                    renderMessages(messages);
+                    if (!isInitialLoad && messages.length > 0) {
+                        const lastMessage = messages[messages.length - 1];
+                        if (lastMessage.sender !== currentUser) {
+                            showNotification(`New message from ${lastMessage.sender}`, lastMessage.text);
+                        }
+                    }
+                    isInitialLoad = false;
                 });
             }
-        }
+            
+            function renderMessages(messages) {
+                messagesContainer.innerHTML = '';
+                messages.forEach(msg => {
+                    const isCurrentUser = msg.sender === currentUser;
+                    const messageWrapper = document.createElement('div');
+                    messageWrapper.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`;
 
-        // --- Event Listeners ---
-        loginButton.addEventListener('click', handleLogin);
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleLogin();
-        });
+                    const messageBubble = document.createElement('div');
+                    messageBubble.className = `max-w-xs md:max-w-md p-3 rounded-2xl shadow`;
+                    if (isCurrentUser) {
+                        messageBubble.classList.add('bg-blue-600', 'text-white');
+                    } else {
+                        messageBubble.classList.add('bg-white', 'text-gray-800');
+                    }
 
-        sendButton.addEventListener('click', sendMessage);
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault(); // Prevents new line on enter
-                sendMessage();
+                    const senderName = document.createElement('p');
+                    senderName.className = 'text-xs font-bold mb-1';
+                    senderName.textContent = msg.sender;
+                    if (isCurrentUser) {
+                        senderName.classList.add('text-blue-200');
+                    } else {
+                        senderName.classList.add('text-gray-500');
+                    }
+
+                    const messageText = document.createElement('p');
+                    messageText.textContent = msg.text;
+
+                    messageBubble.appendChild(senderName);
+                    messageBubble.appendChild(messageText);
+                    messageWrapper.appendChild(messageBubble);
+                    messagesContainer.appendChild(messageWrapper);
+                });
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
-        });
-        
-        logoutButton.addEventListener('click', () => {
-            // Simple reload to go back to login screen and reset state
-            window.location.reload();
-        });
 
-        // --- Start the App ---
-        initializeFirebase();
+            async function sendMessage() {
+                const text = messageInput.value.trim();
+                if (text === '' || !currentUser) return;
+                try {
+                    const messagesRef = collection(db, `artifacts/${appId}/public/data/messages`);
+                    await addDoc(messagesRef, {
+                        text: text,
+                        sender: currentUser,
+                        timestamp: serverTimestamp()
+                    });
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error("Error sending message:", error);
+                }
+            }
 
+            function requestNotificationPermission() {
+                if ('Notification' in window && Notification.permission !== 'granted') {
+                    Notification.requestPermission();
+                }
+            }
+            
+            function showNotification(title, body) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: 'https://placehold.co/192x192/000000/FFFFFF?text=Chat'
+                    });
+                }
+            }
+
+            // --- Start the App ---
+            main();
+        });
     </script>
 </body>
 </html>

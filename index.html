@@ -330,7 +330,7 @@
             document.getElementById('chatContainer').style.display = 'flex';
             document.getElementById('chatTitle').textContent = `Welcome ${currentUser}`;
             document.getElementById('messageInput').focus();
-            displayAllMessages();
+            loadMessages(); // Load existing messages
         }
 
         function sendMessage() {
@@ -347,6 +347,7 @@
             };
 
             messages.push(message);
+            saveMessages(); // Save to localStorage
             displayMessage(message);
             input.value = '';
             
@@ -410,51 +411,85 @@
             });
         }
 
-        // Simulate receiving messages from other user (for demo purposes)
-        function simulateIncomingMessage() {
-            if (!isLoggedIn) return;
-            
-            const otherUser = currentUser === 'Shalin' ? 'Parthi' : 'Shalin';
-            const demoMessages = [
-                'Hey there!',
-                'How are you doing?',
-                'This chat app looks great!',
-                'Thanks for setting this up!',
-                'The classic theme is really nice.'
-            ];
-            
-            // Randomly send a message every 30-60 seconds (just for demo)
-            if (Math.random() < 0.1) { // 10% chance every 3 seconds
-                const randomMessage = demoMessages[Math.floor(Math.random() * demoMessages.length)];
-                const message = {
-                    id: ++messageId,
-                    text: randomMessage,
-                    sender: otherUser,
-                    timestamp: new Date()
+        // Save messages to localStorage (will work when deployed)
+        function saveMessages() {
+            try {
+                const chatData = {
+                    messages: messages,
+                    lastUpdate: Date.now()
                 };
-                
-                messages.push(message);
-                displayMessage(message);
-                
-                // Scroll to bottom
-                const messagesDiv = document.getElementById('messages');
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                
-                // Show notification
-                showNotification(`New message from ${otherUser}!`, 'success');
-                
-                // Browser notification
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`New message from ${otherUser}`, {
-                        body: randomMessage,
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg2WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
-                    });
-                }
+                localStorage.setItem('privateChatMessages', JSON.stringify(chatData));
+            } catch (e) {
+                // localStorage not available in this environment
             }
         }
 
-        // Check for simulated messages every 3 seconds (for demo)
-        setInterval(simulateIncomingMessage, 3000);
+        // Load messages from localStorage (will work when deployed)
+        function loadMessages() {
+            try {
+                const savedData = localStorage.getItem('privateChatMessages');
+                if (savedData) {
+                    const chatData = JSON.parse(savedData);
+                    messages = chatData.messages.map(msg => ({
+                        ...msg,
+                        timestamp: new Date(msg.timestamp)
+                    }));
+                    messageId = Math.max(...messages.map(m => m.id), 0);
+                    displayAllMessages();
+                }
+            } catch (e) {
+                // localStorage not available in this environment
+            }
+        }
+
+        // Check for new messages from other user
+        function checkForNewMessages() {
+            if (!isLoggedIn) return;
+            
+            try {
+                const savedData = localStorage.getItem('privateChatMessages');
+                if (savedData) {
+                    const chatData = JSON.parse(savedData);
+                    const savedMessages = chatData.messages;
+                    
+                    // Check if there are new messages
+                    if (savedMessages.length > messages.length) {
+                        const newMessages = savedMessages.slice(messages.length);
+                        
+                        newMessages.forEach(msg => {
+                            const message = {
+                                ...msg,
+                                timestamp: new Date(msg.timestamp)
+                            };
+                            messages.push(message);
+                            
+                            // Only show notification if message is from other user
+                            if (message.sender !== currentUser) {
+                                displayMessage(message);
+                                showNotification(`New message from ${message.sender}!`, 'success');
+                                
+                                // Browser notification
+                                if ('Notification' in window && Notification.permission === 'granted') {
+                                    new Notification(`New message from ${message.sender}`, {
+                                        body: message.text,
+                                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg2WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
+                                    });
+                                }
+                            }
+                        });
+                        
+                        // Scroll to bottom
+                        const messagesDiv = document.getElementById('messages');
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                }
+            } catch (e) {
+                // localStorage not available in this environment
+            }
+        }
+
+        // Check for new messages every 2 seconds
+        setInterval(checkForNewMessages, 2000);
     </script>
 </body>
 </html>

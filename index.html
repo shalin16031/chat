@@ -391,8 +391,10 @@
             db = firebase.firestore();
             isFirebaseConnected = true;
             console.log('Firebase connected successfully');
+            showNotification('Firebase connected!', 'success');
         } catch (error) {
-            console.log('Firebase connection failed - running in demo mode');
+            console.error('Firebase connection failed:', error);
+            showNotification('Firebase connection failed: ' + error.message, 'error');
             isFirebaseConnected = false;
         }
 
@@ -494,10 +496,12 @@
             try {
                 if (isFirebaseConnected) {
                     // Send to Firebase
+                    console.log('Sending message to Firebase:', message);
                     await db.collection('messages').add({
                         ...message,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    console.log('Message sent successfully');
                     showNotification('Message sent!', 'success');
                 } else {
                     // Demo mode - just add locally
@@ -507,7 +511,7 @@
                 }
             } catch (error) {
                 console.error('Error sending message:', error);
-                showNotification('Failed to send message', 'error');
+                showNotification('Failed to send message: ' + error.message, 'error');
             }
 
             input.value = '';
@@ -520,17 +524,23 @@
         }
 
         function setupRealtimeListener() {
-            if (!isFirebaseConnected) return;
+            if (!isFirebaseConnected) {
+                console.log('Firebase not connected, cannot setup listener');
+                return;
+            }
 
+            console.log('Setting up realtime listener...');
             messageListener = db.collection('messages')
                 .orderBy('timestamp', 'asc')
                 .onSnapshot((snapshot) => {
+                    console.log('Received snapshot with', snapshot.size, 'messages');
                     const messagesDiv = document.getElementById('messages');
                     messagesDiv.innerHTML = '';
                     messages = [];
                     
                     snapshot.forEach((doc) => {
                         const data = doc.data();
+                        console.log('Message data:', data);
                         const message = {
                             id: doc.id,
                             text: data.text,
@@ -545,7 +555,7 @@
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }, (error) => {
                     console.error('Error listening to messages:', error);
-                    showNotification('Connection error', 'error');
+                    showNotification('Connection error: ' + error.message, 'error');
                 });
         }
 

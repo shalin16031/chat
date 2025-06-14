@@ -273,7 +273,7 @@
 
         .setup-instructions {
             background: #f8f9fa;
-            border: 2px solid #3498db;
+            border: 2px solid #27ae60;
             border-radius: 10px;
             padding: 20px;
             margin: 20px 0;
@@ -284,21 +284,6 @@
         .setup-instructions h3 {
             color: #2c3e50;
             margin-bottom: 15px;
-        }
-
-        .setup-instructions code {
-            background: #e9ecef;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-        }
-
-        .setup-instructions ol {
-            margin-left: 20px;
-        }
-
-        .setup-instructions li {
-            margin-bottom: 8px;
         }
 
         @media (max-width: 480px) {
@@ -321,16 +306,9 @@
     <div class="container">
         <!-- Setup Instructions -->
         <div class="setup-instructions">
-            <h3>🔧 Setup Required for Cross-Device Chat</h3>
-            <p>To make this chat work across multiple devices, you need to:</p>
-            <ol>
-                <li>Go to <a href="https://firebase.google.com" target="_blank">Firebase Console</a></li>
-                <li>Create a new project</li>
-                <li>Enable Firestore Database</li>
-                <li>Copy your Firebase config and replace the config below</li>
-                <li>Deploy this HTML file to a web hosting service</li>
-            </ol>
-            <p><strong>Current Status:</strong> <span style="color: #27ae60;">✅ Firebase Connected - Messages sync across devices!</span></p>
+            <h3>🔥 Firebase Connected!</h3>
+            <p><strong>Status:</strong> Ready for cross-device messaging</p>
+            <p>Both users can now chat in real-time across different devices!</p>
         </div>
 
         <!-- Login Form -->
@@ -366,11 +344,11 @@
     <!-- Notification -->
     <div class="notification" id="notification"></div>
 
-    <!-- Firebase SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+    <!-- Firebase SDK v9 (modular) -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
-    <script>
         // Your Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyC39AyuOY9zmaafShioTAxLJ1UeIi8b8YE",
@@ -382,18 +360,18 @@
             measurementId: "G-Y6N5SDGSSL"
         };
 
-        // Initialize Firebase (will fail in demo mode)
-        let db = null;
+        // Initialize Firebase
+        let app, db;
         let isFirebaseConnected = false;
 
         try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.firestore();
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
             isFirebaseConnected = true;
-            console.log('Firebase connected successfully');
+            console.log('✅ Firebase connected successfully');
             showNotification('Firebase connected!', 'success');
         } catch (error) {
-            console.error('Firebase connection failed:', error);
+            console.error('❌ Firebase connection failed:', error);
             showNotification('Firebase connection failed: ' + error.message, 'error');
             isFirebaseConnected = false;
         }
@@ -406,9 +384,14 @@
 
         let currentUser = '';
         let messages = [];
-        let messageId = 0;
         let isLoggedIn = false;
         let messageListener = null;
+
+        // Make functions globally available
+        window.login = login;
+        window.logout = logout;
+        window.sendMessage = sendMessage;
+        window.handleKeyPress = handleKeyPress;
 
         function updateConnectionStatus() {
             const indicator = document.getElementById('statusIndicator');
@@ -441,7 +424,7 @@
                 if (isFirebaseConnected) {
                     setupRealtimeListener();
                 } else {
-                    showNotification('Running in demo mode - messages won\'t sync', 'error');
+                    showNotification('Firebase not connected - messages won\'t sync', 'error');
                 }
             } else {
                 errorDiv.textContent = 'Invalid username or password';
@@ -472,7 +455,6 @@
             document.getElementById('chatTitle').textContent = `Welcome ${currentUser}`;
             document.getElementById('messageInput').focus();
             updateConnectionStatus();
-            loadMessages();
         }
 
         async function sendMessage() {
@@ -489,74 +471,64 @@
             const message = {
                 text: messageText,
                 sender: currentUser,
-                timestamp: new Date(),
-                id: Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+                timestamp: serverTimestamp(),
+                createdAt: new Date() // Fallback for immediate display
             };
 
             try {
                 if (isFirebaseConnected) {
-                    // Send to Firebase
-                    console.log('Sending message to Firebase:', message);
-                    await db.collection('messages').add({
-                        ...message,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                    console.log('Message sent successfully');
+                    console.log('📤 Sending message to Firebase:', messageText);
+                    await addDoc(collection(db, 'messages'), message);
+                    console.log('✅ Message sent successfully');
                     showNotification('Message sent!', 'success');
                 } else {
-                    // Demo mode - just add locally
-                    messages.push(message);
-                    displayMessage(message);
-                    showNotification('Demo mode - message not synced', 'error');
+                    showNotification('Firebase not connected - message not synced', 'error');
                 }
             } catch (error) {
-                console.error('Error sending message:', error);
-                showNotification('Failed to send message: ' + error.message, 'error');
+                console.error('❌ Error sending message:', error);
+                showNotification('Failed to send: ' + error.code, 'error');
             }
 
             input.value = '';
             sendBtn.disabled = false;
             sendBtn.textContent = 'Send';
-            
-            // Scroll to bottom
-            const messagesDiv = document.getElementById('messages');
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
 
         function setupRealtimeListener() {
             if (!isFirebaseConnected) {
-                console.log('Firebase not connected, cannot setup listener');
+                console.log('⚠️ Firebase not connected, cannot setup listener');
                 return;
             }
 
-            console.log('Setting up realtime listener...');
-            messageListener = db.collection('messages')
-                .orderBy('timestamp', 'asc')
-                .onSnapshot((snapshot) => {
-                    console.log('Received snapshot with', snapshot.size, 'messages');
-                    const messagesDiv = document.getElementById('messages');
-                    messagesDiv.innerHTML = '';
-                    messages = [];
-                    
-                    snapshot.forEach((doc) => {
-                        const data = doc.data();
-                        console.log('Message data:', data);
-                        const message = {
-                            id: doc.id,
-                            text: data.text,
-                            sender: data.sender,
-                            timestamp: data.timestamp ? data.timestamp.toDate() : new Date()
-                        };
-                        messages.push(message);
-                        displayMessage(message);
-                    });
-                    
-                    // Scroll to bottom
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                }, (error) => {
-                    console.error('Error listening to messages:', error);
-                    showNotification('Connection error: ' + error.message, 'error');
+            console.log('🔄 Setting up realtime listener...');
+            
+            const messagesRef = collection(db, 'messages');
+            const q = query(messagesRef, orderBy('timestamp', 'asc'));
+            
+            messageListener = onSnapshot(q, (snapshot) => {
+                console.log('📨 Received snapshot with', snapshot.size, 'messages');
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+                messages = [];
+                
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const message = {
+                        id: doc.id,
+                        text: data.text,
+                        sender: data.sender,
+                        timestamp: data.timestamp ? data.timestamp.toDate() : data.createdAt
+                    };
+                    messages.push(message);
+                    displayMessage(message);
                 });
+                
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, (error) => {
+                console.error('❌ Error listening to messages:', error);
+                showNotification('Connection error: ' + error.code, 'error');
+            });
         }
 
         function displayMessage(message) {
@@ -564,8 +536,8 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${message.sender === currentUser ? 'own' : 'other'}`;
             
-            const time = message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const date = message.timestamp.toLocaleDateString();
+            const time = message.timestamp ? message.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'now';
+            const date = message.timestamp ? message.timestamp.toLocaleDateString() : 'today';
             
             messageDiv.innerHTML = `
                 <div>${message.text}</div>
@@ -582,28 +554,9 @@
                 if ('Notification' in window && Notification.permission === 'granted') {
                     new Notification(`New message from ${message.sender}`, {
                         body: message.text,
-                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg2WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
+                        icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMTJIMTZNOCAxNkgxM002IDIwSDlMOSAxNi42Nkw5IDEySDMuNUMzLjIyIDEyIDMgMTEuNzggMyAxMS41VjQuNUMzIDQuMjIgMy4yMiA0IDMuNSA0SDIwLjVDMjAuNzggNCAyMSA0LjIyIDIxIDQuNVYxMS41QzIxIDExLjc4IDIwLjc4IDEyIDIwLjUgMTJIMTVMMTUgMTYuNjZMMTUgMjBIMTJIMTAuNUwxMCAyMEg6WiIgc3Ryb2tlPSIjMzQ5OGRiIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgo8L3N2Zz4K'
                     });
                 }
-            }
-        }
-
-        function loadMessages() {
-            if (!isFirebaseConnected) {
-                // Demo mode - show sample messages
-                const sampleMessages = [
-                    {
-                        id: 'demo1',
-                        text: 'This is demo mode. Set up Firebase to sync messages across devices!',
-                        sender: 'System',
-                        timestamp: new Date()
-                    }
-                ];
-                
-                sampleMessages.forEach(msg => {
-                    messages.push(msg);
-                    displayMessage(msg);
-                });
             }
         }
 

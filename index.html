@@ -330,7 +330,7 @@
                 <li>Copy your Firebase config and replace the config below</li>
                 <li>Deploy this HTML file to a web hosting service</li>
             </ol>
-            <p><strong>Current Status:</strong> <span style="color: #e74c3c;">⚠️ Demo Mode - Messages won't sync between devices</span></p>
+            <p><strong>Current Status:</strong> <span style="color: #27ae60;">✅ Firebase Connected - Messages sync across devices!</span></p>
         </div>
 
         <!-- Login Form -->
@@ -371,15 +371,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
 
     <script>
-        // Firebase configuration - REPLACE WITH YOUR OWN CONFIG
-       const firebaseConfig = {  apiKey: "AIzaSyC39AyuOY9zmaafShioTAxLJ1UeIi8b8YE",  
-                               authDomain: "done-a9c02.firebaseapp.com",  
-                               projectId: "done-a9c02",  
-                               storageBucket: "done-a9c02.firebasestorage.app",  
-                               messagingSenderId: "913187617467",  
-                               appId: "1:913187617467:web:81cf7623e067669f30879e",  
-                               measurementId: "G-Y6N5SDGSSL"
-                              };
+        // Your Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyC39AyuOY9zmaafShioTAxLJ1UeIi8b8YE",
+            authDomain: "done-a9c02.firebaseapp.com",
+            projectId: "done-a9c02",
+            storageBucket: "done-a9c02.firebasestorage.app",
+            messagingSenderId: "913187617467",
+            appId: "1:913187617467:web:81cf7623e067669f30879e",
+            measurementId: "G-Y6N5SDGSSL"
+        };
 
         // Initialize Firebase (will fail in demo mode)
         let db = null;
